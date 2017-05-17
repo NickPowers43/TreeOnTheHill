@@ -12,9 +12,8 @@ layout(location = 0) in vec3 aVertexVelocity;
 
 void main()
 {
-	vec3 positionTexCoord = vec3(float(gl_VertexID) * (1.0 / 1024.0), 0.5, 0.0);
-	vec4 position = texture(positionTex, positionTexCoord.xy);
+	vec4 position = texelFetch(positionTex, ivec2(gl_VertexID, 0), 0);
 
-	gl_Position = projMat * viewMat * vec4(aVertexVelocity,1);
-	gl_PointSize = 10.0;
+	gl_Position = projMat * viewMat * (position + vec4(0.0 * aVertexVelocity,0));
+	gl_PointSize = 5.0;
 }
