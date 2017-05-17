@@ -68,15 +68,6 @@ function createGLObjects(gl, myVBO, theirVBO, myTex, theirTex, texWidth)
 {
 	var fbo = gl.createFramebuffer();
 	
-	
-    gl.bindTexture(gl.TEXTURE_2D, myTex);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, texWidth, 1, 0, gl.RGBA, gl.FLOAT, null);
-	gl.bindTexture(gl.TEXTURE_2D, null);
-	
 	var rbo = gl.createRenderbuffer();
 	
     gl.bindRenderbuffer(gl.RENDERBUFFER, rbo);
@@ -97,35 +88,11 @@ function createGLObjects(gl, myVBO, theirVBO, myTex, theirTex, texWidth)
 		vbo: myVBO,
 		tex: myTex,
 		rbo: rbo,
-		bind: function(program, positionTexLoc) {
-			
-			gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
-			
-			gl.bindBuffer(gl.ARRAY_BUFFER, theirVBO);
-			gl.enableVertexAttribArray(0);
-			gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
-			
-			gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, tfo);
-			gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, myVBO);
-			
-			gl.beginTransformFeedback(gl.POINTS);
-		},
-		unbind: function(program, positionTexLoc) {
-			
-			gl.endTransformFeedback();
-			
-			gl.disableVertexAttribArray(0);
-			gl.bindBuffer(gl.ARRAY_BUFFER, null);
-			
-			gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
-			gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
-			
-			gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-		}
+		fbo: fbo
 	};
 }
 
-function createSimGLObjects(gl, texWidth)
+function createSimGLObjects(gl, particleCount, texData)
 {
 	var vbo0 = gl.createBuffer();
 	var vbo1 = gl.createBuffer();
@@ -133,9 +100,25 @@ function createSimGLObjects(gl, texWidth)
 	var tex0 = gl.createTexture();
 	var tex1 = gl.createTexture();
 	
+    gl.bindTexture(gl.TEXTURE_2D, tex0);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleCount, 1, 0, gl.RGBA, gl.FLOAT, null);
+	gl.bindTexture(gl.TEXTURE_2D, null);
+	
+    gl.bindTexture(gl.TEXTURE_2D, tex1);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleCount, 1, 0, gl.RGBA, gl.FLOAT, texData);
+	gl.bindTexture(gl.TEXTURE_2D, null);
+	
 	return [
-		createGLObjects(gl, vbo0, vbo1, tex0, tex1, texWidth),
-		createGLObjects(gl, vbo1, vbo0, tex1, tex0, texWidth)
+		createGLObjects(gl, vbo0, vbo1, tex0, tex1, particleCount),
+		createGLObjects(gl, vbo1, vbo0, tex1, tex0, particleCount)
 	];
 }
 
@@ -203,6 +186,15 @@ var run = function (gl, resources) {
 	
 	var positions = new Float32Array(particleCount * 4);
 	
+	for(var i = 0; i < particleCount; i++)
+	{
+		var index = i * 4;
+		positions[index++] = Math.random();
+		positions[index++] = Math.random() * 2.0;
+		positions[index++] = Math.random();
+		positions[index++] = 1.0;
+	}
+	
 	var vboData = [];
 	for(var i = 0; i < particleCount; i++)
 	{
@@ -211,33 +203,12 @@ var run = function (gl, resources) {
 	vboData = new Float32Array(vboData);
 	
 	
-	//var simObjects = createSimGLObjects(gl, particleCount);
-	
-	var tex2 = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex2);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-	gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleCount, 1, 0, gl.RGBA, gl.FLOAT, positions);
-	gl.bindTexture(gl.TEXTURE_2D, null);
-	
-    /*gl.bindTexture(gl.TEXTURE_2D, simObjects[1].tex);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleCount, 1, 0, gl.RGBA, gl.FLOAT, positions);
-	gl.bindTexture(gl.TEXTURE_2D, null);
-    gl.bindTexture(gl.TEXTURE_2D, simObjects[0].tex);
-	gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA32F, particleCount, 1, 0, gl.RGBA, gl.FLOAT, positions);
-	gl.bindTexture(gl.TEXTURE_2D, null);
+	var simObjects = createSimGLObjects(gl, particleCount, positions);
 	
 	gl.bindBuffer(gl.ARRAY_BUFFER, simObjects[1].vbo);
 	gl.bufferData(gl.ARRAY_BUFFER, vboData, gl.STATIC_DRAW);
 	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 	gl.bindBuffer(gl.ARRAY_BUFFER, simObjects[0].vbo);
-	gl.bufferData(gl.ARRAY_BUFFER, vboData, gl.STATIC_DRAW);
-	gl.bindBuffer(gl.ARRAY_BUFFER, null);)*/
-	
-	var vbo2 = gl.createBuffer();
-	gl.bindBuffer(gl.ARRAY_BUFFER, vbo2);
 	gl.bufferData(gl.ARRAY_BUFFER, vboData, gl.STATIC_DRAW);
 	gl.bindBuffer(gl.ARRAY_BUFFER, null);
 	
@@ -246,22 +217,45 @@ var run = function (gl, resources) {
 		canvas.width = window.innerWidth || document.documentElement.clientWidth || document.body.clientWidth;
 		canvas.height = window.innerHeight || document.documentElement.clientHeight || document.body.clientHeight;
 		
-		//gl.useProgram(simProgram);
-		
-		
 		//simulate tree
-		//simObjects[0].bind(simProgram, positionTexLoc);
-		//gl.disable(gl.DEPTH_TEST);
 		
-		//gl.uniform1i(positionTexLoc, simObjects[1].tex);
-		//gl.drawArrays(gl.POINTS, 0, particleCount);
-		//gl.uniform1i(positionTexLoc, null);
+		gl.useProgram(simProgram);
+		gl.viewport(0, 0, particleCount, 1);
 		
-		//simObjects[0].unbind(simProgram, positionTexLoc);
+		gl.disable(gl.DEPTH_TEST);
+		
+		gl.bindFramebuffer(gl.FRAMEBUFFER, simObjects[0].fbo);
+		
+		gl.enableVertexAttribArray(0);
+		gl.bindBuffer(gl.ARRAY_BUFFER, simObjects[1].vbo);
+		gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+		
+		gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, simObjects[0].tfo);
+		gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, simObjects[0].vbo);
+		
+		gl.beginTransformFeedback(gl.POINTS);
+		
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, simObjects[1].tex);
+		gl.uniform1i(positionTexLoc, 0);
+		
+		gl.drawArrays(gl.POINTS, 0, particleCount);
+		
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, null);
+		
+		gl.endTransformFeedback();
+			
+		gl.disableVertexAttribArray(0);
+		gl.bindBuffer(gl.ARRAY_BUFFER, null);
+		
+		gl.bindBufferBase(gl.TRANSFORM_FEEDBACK_BUFFER, 0, null);
+		gl.bindTransformFeedback(gl.TRANSFORM_FEEDBACK, null);
+		
+		gl.bindFramebuffer(gl.FRAMEBUFFER, null);
 		
 		//swap GL objects
-		//simObjects.push(simObjects.shift());
-		
+		simObjects.push(simObjects.shift());
 		
 		gl.enable(gl.DEPTH_TEST);
 		
@@ -298,25 +292,24 @@ var run = function (gl, resources) {
 		gl.drawArrays(gl.TRIANGLES, 0, 3);
 		
 		
-		
 		gl.useProgram(renderProgram);
 		
 		gl.uniformMatrix4fv(projMatLoc2, false, projMat);
 		gl.uniformMatrix4fv(viewMatLoc2, false, viewMat);
 		gl.activeTexture(gl.TEXTURE0);
-		gl.bindTexture(gl.TEXTURE_2D, tex2);
+		gl.bindTexture(gl.TEXTURE_2D, simObjects[0].tex);
 		gl.uniform1i(positionTexLoc2, 0);
 		
-		gl.bindBuffer(gl.ARRAY_BUFFER, vbo2);
+		gl.bindBuffer(gl.ARRAY_BUFFER, simObjects[0].vbo);
 		gl.enableVertexAttribArray(0);
 		gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
 		
 		gl.drawArrays(gl.POINTS, 0, particleCount);
 		
-		/*gl.disableVertexAttribArray(0);
+		gl.disableVertexAttribArray(0);
 		gl.bindBuffer(gl.ARRAY_BUFFER, null);
-		
-		gl.uniform1i(positionTexLoc2, null);*/
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, null);
 		
 		gl.useProgram(null);
 		
